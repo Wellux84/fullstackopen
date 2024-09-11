@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import personService from './services/persons'
 
 const PersonForm = (props) => (
   <form onSubmit={props.addName} >
@@ -36,7 +37,9 @@ const Filter = (props) => (
 const Persons = (props) => {
  
   return (
-    <li>{props.name} {props.number}</li>
+    <li>{props.name} {props.number}
+    <button onClick={props.delButton}>Delete</button>
+    </li>
 
   )
 }
@@ -49,36 +52,60 @@ const App = () => {
   const [filters, setFilters] = useState('')
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data)
+    personService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
       })
   }, [])
 
 const addName = (event) => {
   event.preventDefault() 
 
-      const nameObject = {
-        name: newName,
-        id: persons.length+2,
-        number: newNumber
-      }
+  const existingPerson = persons.find(person => person.name === newName)
+
+  const nameObject = {
+    name: newName,
+    number: newNumber
+  }
   
-      if (persons.some(person => person.name === newName)) {  
-        alert(newName + ' is already added to phenebook')
+  if (existingPerson) {  
+    if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
+      personService
+        .update(existingPerson.id, nameObject)
+        .then(returnedPerson => {
+          setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
+          setNewName('')
+          setNewNumber('')
+        })
       }
-      else {
-        setPersons(persons.concat(nameObject))
-        setNewName('')
-        setNewNumber('')
       }
+  else {
+    personService
+    .create(nameObject)
+    .then(returnedPerson => {
+    setPersons(persons.concat(returnedPerson))
+    setNewName('')
+    setNewNumber('')
+    })
+
+  }
 }
 
 const filteredPersons = persons.filter(person => 
   person.name.toLowerCase().includes(filters.toLowerCase())
 )
 
+const delfunction = (id, name) => {
+  if (window.confirm('Do you want to delete name ' + name)) {
+  window.open(
+  personService
+  .delPerson(id)
+    .then(() => {
+    setPersons(persons.filter(person => person.id !== id))
+  }))
+}
+}
 const handleNameChange = (event) => {
   setNewName(event.target.value)
 }
@@ -105,7 +132,9 @@ console.log(persons)
       <h2>Numbers</h2>
       <ul>
           {filteredPersons.map(persons => 
-          <Persons key={persons.id} name={persons.name} number={persons.number}/>
+          <Persons key={persons.id} name={persons.name} number={persons.number}
+          delButton={() => delfunction(persons.id, persons.name)} 
+          />
         )}
       </ul>
       </div>
