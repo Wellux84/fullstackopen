@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
 const PersonForm = (props) => (
   <form onSubmit={props.addName} >
@@ -32,28 +33,35 @@ const Filter = (props) => (
 </div>
 )
 
-const Persons = ({ persons}) => {
+const Persons = (props) => {
+ 
   return (
-    <li>{persons.name} {persons.number} </li>
+    <li>{props.name} {props.number}</li>
 
   )
 }
 
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-1231244' }
-  ]) 
+  const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filters, setFilters] = useState('')
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        setPersons(response.data)
+      })
+  }, [])
 
 const addName = (event) => {
   event.preventDefault() 
 
       const nameObject = {
         name: newName,
-        id: persons.name,
+        id: persons.length+2,
         number: newNumber
       }
   
@@ -97,7 +105,7 @@ console.log(persons)
       <h2>Numbers</h2>
       <ul>
           {filteredPersons.map(persons => 
-          <Persons key={persons.name} persons={persons} />
+          <Persons key={persons.id} name={persons.name} number={persons.number}/>
         )}
       </ul>
       </div>
