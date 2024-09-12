@@ -43,13 +43,40 @@ const Persons = (props) => {
 
   )
 }
+const Notification = ({ message }) => {
+  if (message === null) {
+    return null
+  }
 
+  else {
+  return (
+    <div className="message">
+      {message}
+    </div>
+  )
+}
+}
+const ErrorNotification = ({ message }) => {
+  if (message === null) {
+    return null
+  }
+
+  else {
+  return (
+    <div className="error">
+      {message}
+    </div>
+  )
+}
+}
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filters, setFilters] = useState('')
+  const [message, setMessage] = useState(null)
+  const [errors, setErrorMessage] = useState(null)
 
   useEffect(() => {
     personService
@@ -75,8 +102,20 @@ const addName = (event) => {
         .update(existingPerson.id, nameObject)
         .then(returnedPerson => {
           setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
+          setMessage(
+            'Changed number of ' + nameObject.name
+          )
+          setTimeout(() => {
+            setMessage(null)
+          }, 5000)
           setNewName('')
           setNewNumber('')
+        })
+        .catch(error => {
+          setErrorMessage('Failed to change ' + nameObject.name)
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
         })
       }
       }
@@ -85,10 +124,21 @@ const addName = (event) => {
     .create(nameObject)
     .then(returnedPerson => {
     setPersons(persons.concat(returnedPerson))
+    setMessage(
+      'Added ' + nameObject.name
+    )
+    setTimeout(() => {
+      setMessage(null)
+    }, 5000)
     setNewName('')
     setNewNumber('')
-    })
-
+  })
+  .catch(error => {
+    setErrorMessage('Failed to add ' + nameObject.name)
+    setTimeout(() => {
+      setErrorMessage(null)
+    }, 5000)
+  })
   }
 }
 
@@ -97,14 +147,23 @@ const filteredPersons = persons.filter(person =>
 )
 
 const delfunction = (id, name) => {
-  if (window.confirm('Do you want to delete name ' + name)) {
-  window.open(
-  personService
-  .delPerson(id)
-    .then(() => {
-    setPersons(persons.filter(person => person.id !== id))
-  }))
-}
+  if (window.confirm('Do you want to delete name ' + name + '?')) {
+    personService
+      .delPerson(id)
+      .then(() => {
+        setPersons(persons.filter(person => person.id !== id))
+        setMessage('Deleted ' + name)
+        setTimeout(() => {
+          setMessage(null)
+        }, 5000)
+      })
+      .catch(error => {
+        setErrorMessage('Failed to delete ' + name)
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+      })
+  }
 }
 const handleNameChange = (event) => {
   setNewName(event.target.value)
@@ -119,6 +178,8 @@ console.log(persons)
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={message} />
+      <ErrorNotification message={errors} />
 
       <Filter filters={filters} handleFilterChange={handleFilterChange}
       />
